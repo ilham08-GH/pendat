@@ -1,29 +1,30 @@
-import streamlit as st
-import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 import joblib
 
-# Load model dan scaler
-model = joblib.load("GNB_model.pkl")
-scaler = joblib.load("scaler_ecoli.pkl")
+# Asumsikan kamu sudah punya data 'data_clean' yang bersih dari outlier dan duplikasi
+# Ambil hanya kolom fitur sesuai app.py
+fitur = ['mcg', 'gvh', 'lip', 'chg', 'aac', 'alm1', 'alm2']
+X_clean = data_clean[fitur]
+y_clean = data_clean['class']  # label target
 
-# Judul halaman
-st.set_page_config(page_title="Prediksi Lokalisasi Protein E. coli", page_icon="🧬")
-st.title("🧬 Prediksi Lokalisasi Protein E. coli")
-st.markdown("Gunakan model Gaussian Naive Bayes untuk memprediksi lokasi subseluler dari protein E. coli.")
+# Normalisasi
+scaler = MinMaxScaler()
+X_scaled = scaler.fit_transform(X_clean)
 
-# Input fitur protein
-st.subheader("📥 Masukkan Fitur Protein:")
-mcg = st.number_input("mcg", value=0.0)
-gvh = st.number_input("gvh", value=0.0)
-lip = st.number_input("lip", value=0.0)
-chg = st.number_input("chg", value=0.0)
-aac = st.number_input("aac", value=0.0)
-alm1 = st.number_input("alm1", value=0.0)
-alm2 = st.number_input("alm2", value=0.0)
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y_clean, test_size=0.2, random_state=42, stratify=y_clean
+)
 
-# Tombol prediksi
-if st.button("🔍 Prediksi Lokasi"):
-    fitur = np.array([[mcg, gvh, lip, chg, aac, alm1, alm2]])
-    fitur_scaled = scaler.transform(fitur)  # normalisasi input
-    hasil = model.predict(fitur_scaled)[0]
-    st.success(f"✅ Prediksi Lokasi Protein: **{hasil.upper()}**")
+# Latih model Gaussian Naive Bayes
+model = GaussianNB()
+model.fit(X_train, y_train)
+
+# Simpan model dan scaler dengan nama yang diminta app.py
+joblib.dump(model, 'GNB_model.pkl')
+joblib.dump(scaler, 'scaler_ecoli.pkl')
+
+print("✅ GNB_model.pkl dan scaler_ecoli.pkl berhasil disimpan.")
